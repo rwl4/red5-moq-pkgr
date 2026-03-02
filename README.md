@@ -1007,6 +1007,10 @@ Based on the MOQtail project. Contributions welcome!
 - [RFC9626 - Video Frame Marking](https://datatracker.ietf.org/doc/html/rfc9626)
 - [RFC6464 - Audio Level Extension](https://datatracker.ietf.org/doc/html/rfc6464)
 
+## Related Projects
+  
+- [MOQPUB](https://github.com/Red5/red5-moqpub)
+
 ## Support
 
 For issues, questions, or contributions, please open an issue on GitHub.
