@@ -112,6 +112,10 @@ public class MsfCatalogValidator {
         if (PackagingType.EVENT_TIMELINE.getValue().equals(packaging)) {
             validateEventTimelineTrack(track);
         }
+
+        if (PackagingType.CMAF.getValue().equals(packaging)) {
+            validateCmsfTrack(track);
+        }
     }
 
     /**
@@ -138,6 +142,25 @@ public class MsfCatalogValidator {
         }
         if (isBlank(track.getEventType())) {
             throw new IllegalArgumentException("Event timeline track must declare eventType");
+        }
+    }
+
+    /**
+     * CMSF Section 3.5: CMAF track catalog requirements.
+     */
+    private static void validateCmsfTrack(WarpTrack track) {
+        if (isBlank(track.getInitData())) {
+            throw new IllegalArgumentException("CMAF track must declare initData");
+        }
+
+        Integer maxGrpSapStartingType = track.getMaxGrpSapStartingType();
+        if (maxGrpSapStartingType != null && maxGrpSapStartingType != 1 && maxGrpSapStartingType != 2) {
+            throw new IllegalArgumentException("maxGrpSapStartingType must be 1 or 2");
+        }
+
+        Integer maxObjSapStartingType = track.getMaxObjSapStartingType();
+        if (maxObjSapStartingType != null && (maxObjSapStartingType < 0 || maxObjSapStartingType > 3)) {
+            throw new IllegalArgumentException("maxObjSapStartingType must be between 0 and 3");
         }
     }
 

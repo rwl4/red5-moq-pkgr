@@ -91,6 +91,27 @@ class MsfBuilderTest {
     }
 
     @Test
+    void testCmsfVideoTrackBuilder() {
+        byte[] initData = new byte[] {0, 1, 2, 3};
+        MsfTrack track = MsfTrack.cmafVideo("hd")
+            .live()
+            .codec("avc1.640028")
+            .initDataBytes(initData)
+            .maxGrpSapStartingType(2)
+            .maxObjSapStartingType(3)
+            .altGroup(1)
+            .build();
+
+        assertEquals("hd", track.getName());
+        assertEquals("cmaf", track.getPackaging());
+        assertEquals("video", track.getRole());
+        assertEquals("AAECAw==", track.getInitData());
+        assertEquals(2, track.getMaxGrpSapStartingType());
+        assertEquals(3, track.getMaxObjSapStartingType());
+        assertEquals(1, track.getAltGroup());
+    }
+
+    @Test
     void testMediaTimelineTrackBuilder() {
         MsfTrack track = MsfTrack.mediaTimeline("history")
             .live()

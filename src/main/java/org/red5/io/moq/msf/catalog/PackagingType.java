@@ -11,6 +11,9 @@ public enum PackagingType {
     /** LOC packaged media content */
     LOC("loc"),
 
+    /** CMAF packaged media content via CMSF */
+    CMAF("cmaf"),
+
     /** Media timeline track (section 7) */
     MEDIA_TIMELINE("mediatimeline"),
 

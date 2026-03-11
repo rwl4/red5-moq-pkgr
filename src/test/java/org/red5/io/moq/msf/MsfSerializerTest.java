@@ -230,6 +230,27 @@ class MsfSerializerTest {
         assertEquals(128000, audio.getBitrate());
     }
 
+    @Test
+    void testSerializeCmsfTrack() throws Exception {
+        MsfCatalog catalog = MsfCatalog.builder()
+            .addTrack(MsfTrack.cmafVideo("video")
+                .live()
+                .initData("AAAA")
+                .codec("avc1.640028")
+                .maxGrpSapStartingType(2)
+                .maxObjSapStartingType(3))
+            .build();
+
+        String json = serializer.toJson(catalog);
+        MsfCatalog parsed = serializer.fromJsonValidated(json);
+
+        WarpTrack track = parsed.getTracks().get(0);
+        assertEquals("cmaf", track.getPackaging());
+        assertEquals("AAAA", track.getInitData());
+        assertEquals(2, track.getMaxGrpSapStartingType());
+        assertEquals(3, track.getMaxObjSapStartingType());
+    }
+
     // Timeline track serialization
 
     @Test

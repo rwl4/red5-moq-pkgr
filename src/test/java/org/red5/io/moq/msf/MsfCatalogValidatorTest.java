@@ -58,6 +58,7 @@ class MsfCatalogValidatorTest {
     @Test
     void testPackagingTypeValues() {
         assertEquals("loc", PackagingType.LOC.getValue());
+        assertEquals("cmaf", PackagingType.CMAF.getValue());
         assertEquals("mediatimeline", PackagingType.MEDIA_TIMELINE.getValue());
         assertEquals("eventtimeline", PackagingType.EVENT_TIMELINE.getValue());
     }
@@ -65,9 +66,9 @@ class MsfCatalogValidatorTest {
     @Test
     void testPackagingTypeIsValid() {
         assertTrue(PackagingType.isValid("loc"));
+        assertTrue(PackagingType.isValid("cmaf"));
         assertTrue(PackagingType.isValid("mediatimeline"));
         assertTrue(PackagingType.isValid("eventtimeline"));
-        assertFalse(PackagingType.isValid("cmaf"));
         assertFalse(PackagingType.isValid("timeline")); // WARP value, not MSF
         assertFalse(PackagingType.isValid(null));
     }
@@ -75,8 +76,8 @@ class MsfCatalogValidatorTest {
     @Test
     void testPackagingTypeFromValue() {
         assertEquals(PackagingType.LOC, PackagingType.fromValue("loc"));
+        assertEquals(PackagingType.CMAF, PackagingType.fromValue("cmaf"));
         assertEquals(PackagingType.MEDIA_TIMELINE, PackagingType.fromValue("mediatimeline"));
-        assertNull(PackagingType.fromValue("cmaf"));
         assertNull(PackagingType.fromValue(null));
     }
 
@@ -194,6 +195,72 @@ class MsfCatalogValidatorTest {
         catalog.setTracks(List.of(timeline));
 
         assertDoesNotThrow(() -> MsfCatalogValidator.validateCatalog(catalog));
+    }
+
+    @Test
+    void testValidCmsfTrack() {
+        WarpTrack track = new WarpTrack();
+        track.setName("video");
+        track.setPackaging("cmaf");
+        track.setIsLive(true);
+        track.setInitData("AAAA");
+        track.setMaxGrpSapStartingType(2);
+        track.setMaxObjSapStartingType(3);
+
+        WarpCatalog catalog = new WarpCatalog();
+        catalog.setVersion(1);
+        catalog.setTracks(List.of(track));
+
+        assertDoesNotThrow(() -> MsfCatalogValidator.validateCatalog(catalog));
+    }
+
+    @Test
+    void testCmsfTrackRequiresInitData() {
+        WarpTrack track = new WarpTrack();
+        track.setName("video");
+        track.setPackaging("cmaf");
+        track.setIsLive(true);
+
+        WarpCatalog catalog = new WarpCatalog();
+        catalog.setVersion(1);
+        catalog.setTracks(List.of(track));
+
+        assertThrows(IllegalArgumentException.class,
+            () -> MsfCatalogValidator.validateCatalog(catalog));
+    }
+
+    @Test
+    void testCmsfTrackRejectsInvalidGroupSapType() {
+        WarpTrack track = new WarpTrack();
+        track.setName("video");
+        track.setPackaging("cmaf");
+        track.setIsLive(true);
+        track.setInitData("AAAA");
+        track.setMaxGrpSapStartingType(3);
+
+        WarpCatalog catalog = new WarpCatalog();
+        catalog.setVersion(1);
+        catalog.setTracks(List.of(track));
+
+        assertThrows(IllegalArgumentException.class,
+            () -> MsfCatalogValidator.validateCatalog(catalog));
+    }
+
+    @Test
+    void testCmsfTrackRejectsInvalidObjectSapType() {
+        WarpTrack track = new WarpTrack();
+        track.setName("video");
+        track.setPackaging("cmaf");
+        track.setIsLive(true);
+        track.setInitData("AAAA");
+        track.setMaxObjSapStartingType(4);
+
+        WarpCatalog catalog = new WarpCatalog();
+        catalog.setVersion(1);
+        catalog.setTracks(List.of(track));
+
+        assertThrows(IllegalArgumentException.class,
+            () -> MsfCatalogValidator.validateCatalog(catalog));
     }
 
     @Test

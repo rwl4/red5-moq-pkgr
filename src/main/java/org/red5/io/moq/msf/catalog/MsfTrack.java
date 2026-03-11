@@ -2,6 +2,7 @@ package org.red5.io.moq.msf.catalog;
 
 import org.red5.io.moq.warp.catalog.WarpTrack;
 
+import java.util.Base64;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,6 +36,26 @@ public class MsfTrack extends WarpTrack {
         return new Builder()
             .name(name)
             .packaging(PackagingType.LOC)
+            .role(TrackRole.AUDIO);
+    }
+
+    /**
+     * Create a builder for a CMAF-packaged video track.
+     */
+    public static Builder cmafVideo(String name) {
+        return new Builder()
+            .name(name)
+            .packaging(PackagingType.CMAF)
+            .role(TrackRole.VIDEO);
+    }
+
+    /**
+     * Create a builder for a CMAF-packaged audio track.
+     */
+    public static Builder cmafAudio(String name) {
+        return new Builder()
+            .name(name)
+            .packaging(PackagingType.CMAF)
             .role(TrackRole.AUDIO);
     }
 
@@ -181,6 +202,14 @@ public class MsfTrack extends WarpTrack {
             return this;
         }
 
+        /**
+         * Set initialization data from raw bytes, encoded as base64 for catalog transport.
+         */
+        public Builder initDataBytes(byte[] initData) {
+            track.setInitData(initData == null ? null : Base64.getEncoder().encodeToString(initData));
+            return this;
+        }
+
         public Builder dependsOn(String trackName) {
             dependencies.add(trackName);
             return this;
@@ -240,6 +269,16 @@ public class MsfTrack extends WarpTrack {
 
         public Builder language(String lang) {
             track.setLang(lang);
+            return this;
+        }
+
+        public Builder maxGrpSapStartingType(int sapType) {
+            track.setMaxGrpSapStartingType(sapType);
+            return this;
+        }
+
+        public Builder maxObjSapStartingType(int sapType) {
+            track.setMaxObjSapStartingType(sapType);
             return this;
         }
 
