@@ -1,16 +1,18 @@
 package org.red5.io.moq.msf;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.red5.io.moq.msf.timeline.MsfEventTimeline;
 import org.red5.io.moq.msf.timeline.MsfEventTimelineEntry;
 import org.red5.io.moq.msf.timeline.MsfMediaTimeline;
 import org.red5.io.moq.msf.timeline.MsfMediaTimelineRecord;
 
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
+import com.google.gson.JsonObject;
 
 class MsfTimelineTest {
 

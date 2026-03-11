@@ -3,7 +3,6 @@ package org.red5.io.moq.cmaf.model;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 /**
  * Base class for all ISO BMFF boxes.
