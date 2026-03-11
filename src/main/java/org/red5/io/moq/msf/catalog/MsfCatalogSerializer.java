@@ -1,44 +1,32 @@
 package org.red5.io.moq.msf.catalog;
 
+import org.red5.io.moq.catalog.CatalogSerializer;
 import org.red5.io.moq.warp.catalog.WarpCatalog;
-import org.red5.io.moq.warp.catalog.WarpCatalogSerializer;
 
 import java.io.IOException;
 
 /**
  * JSON serializer/deserializer for MSF catalogs.
- * Wraps WarpCatalogSerializer with MSF validation.
+ * Uses CatalogSerializer as the shared JSON base and applies MSF validation.
  */
-public class MsfCatalogSerializer {
-    private final WarpCatalogSerializer delegate;
-
-    public MsfCatalogSerializer() {
-        this.delegate = new WarpCatalogSerializer();
-    }
+public class MsfCatalogSerializer extends CatalogSerializer {
 
     /**
      * Serialize catalog to JSON string.
      */
     public String toJson(WarpCatalog catalog) {
-        return delegate.toJson(catalog);
+        return serializeObject(catalog);
     }
 
     /**
      * Deserialize JSON string to catalog.
      */
     public MsfCatalog fromJson(String json) throws IOException {
-        WarpCatalog warpCatalog = delegate.fromJson(json);
-        // Convert to MsfCatalog
-        MsfCatalog msfCatalog = new MsfCatalog();
-        msfCatalog.setVersion(warpCatalog.getVersion());
-        msfCatalog.setDeltaUpdate(warpCatalog.getDeltaUpdate());
-        msfCatalog.setIsComplete(warpCatalog.getIsComplete());
-        msfCatalog.setGeneratedAt(warpCatalog.getGeneratedAt());
-        msfCatalog.setTracks(warpCatalog.getTracks());
-        msfCatalog.setAddTracks(warpCatalog.getAddTracks());
-        msfCatalog.setRemoveTracks(warpCatalog.getRemoveTracks());
-        msfCatalog.setCloneTracks(warpCatalog.getCloneTracks());
-        return msfCatalog;
+        try {
+            return deserializeObject(json, MsfCatalog.class);
+        } catch (Exception e) {
+            throw new IOException("Failed to parse MSF catalog JSON", e);
+        }
     }
 
     /**

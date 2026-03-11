@@ -16,8 +16,7 @@ import com.google.gson.JsonSyntaxException;
  */
 public class CatalogSerializer {
 
-    private final Gson gson;
-    private final Gson prettyGson;
+    private final Gson gson, prettyGson;
 
     public CatalogSerializer() {
         // Create Gson instance that excludes null values
@@ -30,6 +29,35 @@ public class CatalogSerializer {
             .create();
     }
 
+    protected String serializeObject(Object value) {
+        if (value == null) {
+            throw new IllegalArgumentException("Object cannot be null");
+        }
+        return gson.toJson(value);
+    }
+
+    protected String serializePrettyObject(Object value) {
+        if (value == null) {
+            throw new IllegalArgumentException("Object cannot be null");
+        }
+        return prettyGson.toJson(value);
+    }
+
+    protected <T> T deserializeObject(String json, Class<T> type) {
+        if (json == null || json.trim().isEmpty()) {
+            throw new IllegalArgumentException("JSON string cannot be null or empty");
+        }
+        try {
+            T value = gson.fromJson(json, type);
+            if (value == null) {
+                throw new JsonSyntaxException("Failed to deserialize object");
+            }
+            return value;
+        } catch (JsonSyntaxException e) {
+            throw new JsonSyntaxException("Invalid JSON: " + e.getMessage(), e);
+        }
+    }
+
     /**
      * Serializes a catalog to JSON string.
      *
@@ -40,7 +68,7 @@ public class CatalogSerializer {
         if (catalog == null) {
             throw new IllegalArgumentException("Catalog cannot be null");
         }
-        return gson.toJson(catalog);
+        return serializeObject(catalog);
     }
 
     /**
@@ -53,7 +81,7 @@ public class CatalogSerializer {
         if (catalog == null) {
             throw new IllegalArgumentException("Catalog cannot be null");
         }
-        return prettyGson.toJson(catalog);
+        return serializePrettyObject(catalog);
     }
 
     /**
@@ -78,12 +106,8 @@ public class CatalogSerializer {
         if (json == null || json.trim().isEmpty()) {
             throw new IllegalArgumentException("JSON string cannot be null or empty");
         }
-
         try {
-            Catalog catalog = gson.fromJson(json, Catalog.class);
-            if (catalog == null) {
-                throw new JsonSyntaxException("Failed to deserialize catalog");
-            }
+            Catalog catalog = deserializeObject(json, Catalog.class);
             // Validate the catalog structure
             catalog.validate();
             return catalog;
@@ -119,11 +143,9 @@ public class CatalogSerializer {
     public static Catalog createSimpleCatalog(int streamingFormat, String streamingFormatVersion,
                                               String namespace) {
         Catalog catalog = new Catalog(streamingFormat, streamingFormatVersion);
-
         CommonTrackFields common = new CommonTrackFields();
         common.setNamespace(namespace);
         catalog.setCommonTrackFields(common);
-
         return catalog;
     }
 
@@ -135,13 +157,10 @@ public class CatalogSerializer {
      */
     public static Catalog createExampleCatalog(String namespace) {
         Catalog catalog = createSimpleCatalog(1, "0.2", namespace);
-
         CommonTrackFields common = catalog.getCommonTrackFields();
         common.setPackaging("loc");
         common.setRenderGroup(1);
-
         List<CatalogTrack> tracks = new ArrayList<>();
-
         // Video track
         CatalogTrack video = new CatalogTrack("video", "loc");
         SelectionParameters videoParams = new SelectionParameters();
@@ -152,7 +171,6 @@ public class CatalogSerializer {
         videoParams.setBitrate(1500000L);
         video.setSelectionParams(videoParams);
         tracks.add(video);
-
         // Audio track
         CatalogTrack audio = new CatalogTrack("audio", "loc");
         SelectionParameters audioParams = new SelectionParameters();
@@ -162,9 +180,7 @@ public class CatalogSerializer {
         audioParams.setBitrate(32000L);
         audio.setSelectionParams(audioParams);
         tracks.add(audio);
-
         catalog.setTracks(tracks);
-
         return catalog;
     }
 }

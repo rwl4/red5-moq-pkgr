@@ -17,6 +17,9 @@ public class SelectionParameters {
     /** Framerate in frames per second */
     private Double framerate;
 
+    /** Media timescale */
+    private Integer timescale;
+
     /** Bitrate in bits per second */
     private Long bitrate;
 
@@ -68,6 +71,14 @@ public class SelectionParameters {
 
     public void setFramerate(Double framerate) {
         this.framerate = framerate;
+    }
+
+    public Integer getTimescale() {
+        return timescale;
+    }
+
+    public void setTimescale(Integer timescale) {
+        this.timescale = timescale;
     }
 
     public Long getBitrate() {
@@ -141,6 +152,7 @@ public class SelectionParameters {
         if (width != null) sb.append(", width=").append(width);
         if (height != null) sb.append(", height=").append(height);
         if (framerate != null) sb.append(", framerate=").append(framerate);
+        if (timescale != null) sb.append(", timescale=").append(timescale);
         if (bitrate != null) sb.append(", bitrate=").append(bitrate);
         if (samplerate != null) sb.append(", samplerate=").append(samplerate);
         if (channelConfig != null) sb.append(", channelConfig='").append(channelConfig).append('\'');

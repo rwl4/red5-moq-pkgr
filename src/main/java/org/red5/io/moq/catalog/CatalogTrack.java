@@ -49,6 +49,33 @@ public class CatalogTrack {
     /** Spatial layer ID (for SVC) */
     private Integer spatialId;
 
+    /** Track role such as video, audio, mediatimeline, eventtimeline. */
+    private String role;
+
+    /** Parent track name for clone-style tracks. */
+    private String parentName;
+
+    /** Track duration in milliseconds. */
+    private Long trackDuration;
+
+    /** Whether the track is live. */
+    private Boolean isLive;
+
+    /** Target latency in milliseconds for real-time playback. */
+    private Long targetLatency;
+
+    /** Format-specific type field, such as timeline. */
+    private String type;
+
+    /** Event timeline type. */
+    private String eventType;
+
+    /** Maximum SAP type for the first object in each group. */
+    private Integer maxGrpSapStartingType;
+
+    /** Maximum SAP type for object starts. */
+    private Integer maxObjSapStartingType;
+
     public CatalogTrack() {
     }
 
@@ -63,17 +90,26 @@ public class CatalogTrack {
      * @throws IllegalStateException if track is invalid
      */
     public void validate() {
+        validate(null);
+    }
+
+    public void validate(CommonTrackFields commonTrackFields) {
         if (name == null || name.isEmpty()) {
             throw new IllegalStateException("Track name is required");
         }
 
-        if (packaging == null || packaging.isEmpty()) {
+        String effectivePackaging = packaging != null ? packaging
+            : commonTrackFields != null ? commonTrackFields.getPackaging() : null;
+        if (effectivePackaging == null || effectivePackaging.isEmpty()) {
             throw new IllegalStateException("Track packaging is required");
         }
 
-        if (!"cmaf".equals(packaging) && !"loc".equals(packaging)) {
-            throw new IllegalStateException("Invalid packaging type: " + packaging +
-                ". Must be 'cmaf' or 'loc'");
+        if (!"cmaf".equals(effectivePackaging)
+            && !"loc".equals(effectivePackaging)
+            && !"timeline".equals(effectivePackaging)
+            && !"mediatimeline".equals(effectivePackaging)
+            && !"eventtimeline".equals(effectivePackaging)) {
+            throw new IllegalStateException("Invalid packaging type: " + effectivePackaging);
         }
     }
 
@@ -181,6 +217,78 @@ public class CatalogTrack {
 
     public void setSpatialId(Integer spatialId) {
         this.spatialId = spatialId;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+    }
+
+    public String getParentName() {
+        return parentName;
+    }
+
+    public void setParentName(String parentName) {
+        this.parentName = parentName;
+    }
+
+    public Long getTrackDuration() {
+        return trackDuration;
+    }
+
+    public void setTrackDuration(Long trackDuration) {
+        this.trackDuration = trackDuration;
+    }
+
+    public Boolean getIsLive() {
+        return isLive;
+    }
+
+    public void setIsLive(Boolean isLive) {
+        this.isLive = isLive;
+    }
+
+    public Long getTargetLatency() {
+        return targetLatency;
+    }
+
+    public void setTargetLatency(Long targetLatency) {
+        this.targetLatency = targetLatency;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public String getEventType() {
+        return eventType;
+    }
+
+    public void setEventType(String eventType) {
+        this.eventType = eventType;
+    }
+
+    public Integer getMaxGrpSapStartingType() {
+        return maxGrpSapStartingType;
+    }
+
+    public void setMaxGrpSapStartingType(Integer maxGrpSapStartingType) {
+        this.maxGrpSapStartingType = maxGrpSapStartingType;
+    }
+
+    public Integer getMaxObjSapStartingType() {
+        return maxObjSapStartingType;
+    }
+
+    public void setMaxObjSapStartingType(Integer maxObjSapStartingType) {
+        this.maxObjSapStartingType = maxObjSapStartingType;
     }
 
     @Override
