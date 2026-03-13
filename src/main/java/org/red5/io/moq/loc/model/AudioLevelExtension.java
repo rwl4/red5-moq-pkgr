@@ -14,9 +14,9 @@ import java.nio.ByteBuffer;
  * Value Type: Varint (even ID)
  * Length: Varies (1-2 bytes)
  *
- * Bit layout (least significant bits of varint):
- * - Bit 0: V (Voice Activity, 1 = voice, 0 = silence)
- * - Bits 1-7: Level (Audio level, 0-127, 0 = loudest, 127 = silence)
+ * Bit layout (least significant 8 bits of varint, per RFC 6464 Section 3):
+ * - Bit 7: V (Voice Activity, 1 = voice, 0 = silence)
+ * - Bits 6-0: Level (Audio level, 0-127, 0 = loudest, 127 = silence)
  *
  * Reference: draft-ietf-moq-loc Section 2.3.3.1
  *            RFC6464 Section 3
@@ -59,10 +59,9 @@ public class AudioLevelExtension extends LocHeaderExtension {
 
     @Override
     protected byte[] serializeValue() throws IOException {
-        long value = 0;
-
-        if (voiceActivity) value |= 0x01;
-        value |= (audioLevel & 0x7F) << 1;
+        // RFC 6464 Section 3: V flag in MSB (bit 7), level in bits 6-0
+        long value = audioLevel & 0x7F;
+        if (voiceActivity) value |= 0x80;
 
         return serializeVarint(value);
     }
@@ -71,8 +70,9 @@ public class AudioLevelExtension extends LocHeaderExtension {
     public void deserializeValue(ByteBuffer buffer, int length) throws IOException {
         long value = readVarint(buffer);
 
-        this.voiceActivity = (value & 0x01) != 0;
-        this.audioLevel = (int) ((value >> 1) & 0x7F);
+        // RFC 6464 Section 3: V flag in MSB (bit 7), level in bits 6-0
+        this.voiceActivity = (value & 0x80) != 0;
+        this.audioLevel = (int) (value & 0x7F);
     }
 
     @Override

@@ -130,9 +130,9 @@ class RelayIntegrationTest {
                     case AudioLevelExtension.EXTENSION_ID -> {
                         long value = LocHeaderExtension.readVarint(buffer);
                         // Decode RFC6464 audio level per draft-ietf-moq-loc
-                        // Bit 0 = V (Voice activity), Bits 1-7 = Level
-                        voiceActivity = (value & 0x01) != 0;
-                        audioLevel = (int) ((value >> 1) & 0x7F);
+                        // RFC 6464 Section 3: Bit 7 = V (Voice activity), Bits 6-0 = Level
+                        voiceActivity = (value & 0x80) != 0;
+                        audioLevel = (int) (value & 0x7F);
                     }
                     case VideoConfigExtension.EXTENSION_ID -> {
                         // Skip config data - relay doesn't need to parse it
