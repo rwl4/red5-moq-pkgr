@@ -76,42 +76,89 @@ public abstract class LocHeaderExtension implements IHeaderExtension {
     public abstract void deserializeValue(ByteBuffer buffer, int length) throws IOException;
 
     /**
-     * Write a varint to an output stream.
+     * Write a QUIC varint to an output stream.
+     * QUIC varint format (RFC 9000 Section 16): first 2 bits indicate length.
+     * <ul>
+     *   <li>00xxxxxx = 1 byte (6-bit value, max 63)</li>
+     *   <li>01xxxxxx = 2 bytes (14-bit value, max 16383)</li>
+     *   <li>10xxxxxx = 4 bytes (30-bit value, max 1073741823)</li>
+     *   <li>11xxxxxx = 8 bytes (62-bit value, max 4611686018427387903)</li>
+     * </ul>
      */
     protected void writeVarint(ByteArrayOutputStream baos, long value) throws IOException {
-        while (value >= 0x80) {
-            baos.write((int) ((value & 0x7F) | 0x80));
-            value >>>= 7;
+        if (value <= 63) {
+            // 1 byte: 00xxxxxx
+            baos.write((int) value);
+        } else if (value <= 16383) {
+            // 2 bytes: 01xxxxxx xxxxxxxx
+            baos.write((int) ((value >> 8) | 0x40));
+            baos.write((int) (value & 0xFF));
+        } else if (value <= 1073741823) {
+            // 4 bytes: 10xxxxxx xxxxxxxx xxxxxxxx xxxxxxxx
+            baos.write((int) ((value >> 24) | 0x80));
+            baos.write((int) ((value >> 16) & 0xFF));
+            baos.write((int) ((value >> 8) & 0xFF));
+            baos.write((int) (value & 0xFF));
+        } else {
+            // 8 bytes: 11xxxxxx xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx
+            baos.write((int) ((value >> 56) | 0xC0));
+            baos.write((int) ((value >> 48) & 0xFF));
+            baos.write((int) ((value >> 40) & 0xFF));
+            baos.write((int) ((value >> 32) & 0xFF));
+            baos.write((int) ((value >> 24) & 0xFF));
+            baos.write((int) ((value >> 16) & 0xFF));
+            baos.write((int) ((value >> 8) & 0xFF));
+            baos.write((int) (value & 0xFF));
         }
-        baos.write((int) value);
     }
 
     /**
-     * Read a varint from a ByteBuffer.
+     * Read a QUIC varint from a ByteBuffer.
+     * QUIC varint format (RFC 9000 Section 16): first 2 bits indicate length.
      */
     public static long readVarint(ByteBuffer buffer) throws IOException {
-        long value = 0;
-        int shift = 0;
-
-        while (true) {
-            if (!buffer.hasRemaining()) {
-                throw new IOException("Unexpected end of buffer while reading varint");
-            }
-
-            byte b = buffer.get();
-            value |= ((long) (b & 0x7F)) << shift;
-
-            if ((b & 0x80) == 0) {
-                break;
-            }
-
-            shift += 7;
-            if (shift >= 64) {
-                throw new IOException("Varint too long");
-            }
+        if (!buffer.hasRemaining()) {
+            throw new IOException("Unexpected end of buffer while reading varint");
         }
 
-        return value;
+        byte firstByte = buffer.get();
+        int lengthType = (firstByte & 0xC0) >> 6;
+
+        switch (lengthType) {
+            case 0:
+                // 1 byte: 00xxxxxx (6-bit value)
+                return firstByte & 0x3F;
+            case 1:
+                // 2 bytes: 01xxxxxx xxxxxxxx (14-bit value)
+                if (!buffer.hasRemaining()) {
+                    throw new IOException("Unexpected end of buffer while reading 2-byte varint");
+                }
+                return ((firstByte & 0x3F) << 8) | (buffer.get() & 0xFF);
+            case 2:
+                // 4 bytes: 10xxxxxx xxxxxxxx xxxxxxxx xxxxxxxx (30-bit value)
+                if (buffer.remaining() < 3) {
+                    throw new IOException("Unexpected end of buffer while reading 4-byte varint");
+                }
+                return ((long) (firstByte & 0x3F) << 24) |
+                       ((buffer.get() & 0xFF) << 16) |
+                       ((buffer.get() & 0xFF) << 8) |
+                       (buffer.get() & 0xFF);
+            case 3:
+                // 8 bytes: 11xxxxxx xxxxxxxx... (62-bit value)
+                if (buffer.remaining() < 7) {
+                    throw new IOException("Unexpected end of buffer while reading 8-byte varint");
+                }
+                return ((long) (firstByte & 0x3F) << 56) |
+                       ((long) (buffer.get() & 0xFF) << 48) |
+                       ((long) (buffer.get() & 0xFF) << 40) |
+                       ((long) (buffer.get() & 0xFF) << 32) |
+                       ((long) (buffer.get() & 0xFF) << 24) |
+                       ((buffer.get() & 0xFF) << 16) |
+                       ((buffer.get() & 0xFF) << 8) |
+                       (buffer.get() & 0xFF);
+            default:
+                throw new IOException("Invalid varint length type: " + lengthType);
+        }
     }
 
     /**
