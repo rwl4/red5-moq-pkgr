@@ -13,13 +13,17 @@ import java.nio.ByteBuffer;
  * Value Type: Varint (even ID)
  * Length: Varies (1-4 bytes)
  *
- * Bit layout (least significant bits of varint):
- * - Bit 0: I (Independent frame)
- * - Bit 1: D (Discardable frame)
- * - Bit 2: B (Base layer sync point)
- * - Bits 3-5: TID (Temporal Layer ID, 0-7)
- * - Bits 6-7: SID (Spatial Layer ID, 0-3)
- * - Bits 8+: Reserved
+ * Bit layout per RFC 9626 (first byte of varint value):
+ * - Bit 7: S (Start of frame) — not used by LOC, reserved
+ * - Bit 6: E (End of frame) — not used by LOC, reserved
+ * - Bit 5: I (Independent frame)
+ * - Bit 4: D (Discardable frame)
+ * - Bit 3: B (Base layer sync point)
+ * - Bits 2-0: TID (Temporal Layer ID, 0-7)
+ *
+ * If B=1 and second byte present:
+ * - Bits 15-10: LID (Layer ID, 0-63)
+ * - Bits 9-8: Reserved
  *
  * Reference: draft-ietf-moq-loc Section 2.3.2.2
  *            RFC9626
@@ -96,13 +100,19 @@ public class VideoFrameMarkingExtension extends LocHeaderExtension {
 
     @Override
     protected byte[] serializeValue() throws IOException {
+        // RFC 9626 bit layout: S(7) E(6) I(5) D(4) B(3) TID(2-0)
         long value = 0;
 
-        if (independent) value |= 0x01;
-        if (discardable) value |= 0x02;
-        if (baseLayerSync) value |= 0x04;
-        value |= (temporalLayerId & 0x07) << 3;
-        value |= (spatialLayerId & 0x03) << 6;
+        if (independent) value |= 0x20;   // bit 5
+        if (discardable) value |= 0x10;   // bit 4
+        if (baseLayerSync) value |= 0x08; // bit 3
+        value |= temporalLayerId & 0x07;  // bits 2-0
+
+        if (baseLayerSync && spatialLayerId > 0) {
+            // Second byte: LID(7-2) Reserved(1-0)
+            long secondByte = (spatialLayerId & 0x3F) << 2;
+            value = (value << 8) | secondByte;
+        }
 
         return serializeVarint(value);
     }
@@ -111,11 +121,21 @@ public class VideoFrameMarkingExtension extends LocHeaderExtension {
     public void deserializeValue(ByteBuffer buffer, int length) throws IOException {
         long value = readVarint(buffer);
 
-        this.independent = (value & 0x01) != 0;
-        this.discardable = (value & 0x02) != 0;
-        this.baseLayerSync = (value & 0x04) != 0;
-        this.temporalLayerId = (int) ((value >> 3) & 0x07);
-        this.spatialLayerId = (int) ((value >> 6) & 0x03);
+        // RFC 9626 bit layout: S(7) E(6) I(5) D(4) B(3) TID(2-0)
+        // Two-byte form when value >= 256: first byte has flags, second byte has LID
+        boolean hasTwoBytes = value >= 256;
+        long firstByte = hasTwoBytes ? (value >> 8) & 0xFF : value & 0xFF;
+
+        this.independent = (firstByte & 0x20) != 0;   // bit 5
+        this.discardable = (firstByte & 0x10) != 0;    // bit 4
+        this.baseLayerSync = (firstByte & 0x08) != 0;  // bit 3
+        this.temporalLayerId = (int) (firstByte & 0x07); // bits 2-0
+
+        if (hasTwoBytes) {
+            this.spatialLayerId = (int) ((value & 0xFF) >> 2) & 0x3F;
+        } else {
+            this.spatialLayerId = 0;
+        }
     }
 
     @Override

@@ -382,8 +382,8 @@ class LiveRelayIntegrationTest {
         long extId2 = LocHeaderExtension.readVarint(buffer);
         assertEquals(4, extId2, "Second extension should be VideoFrameMarking");
         long frameMarking = LocHeaderExtension.readVarint(buffer);
-        // Bit 0 = I (1), Bit 1 = D (0), Bit 2 = B (1), Bits 3-5 = TID (0), Bits 6-7 = SID (0)
-        assertEquals(0b00000101, frameMarking, "Frame marking should encode I=1, D=0, B=1");
+        // RFC 9626: Bit 5 = I (1), Bit 4 = D (0), Bit 3 = B (1), Bits 2-0 = TID (0)
+        assertEquals(0b00101000, frameMarking, "Frame marking should encode I=1, D=0, B=1");
 
         // Third extension: VideoConfig (ID=13, odd, length-prefixed)
         long extId3 = LocHeaderExtension.readVarint(buffer);

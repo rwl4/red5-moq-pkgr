@@ -226,8 +226,9 @@ class LocObjectTest {
     @Test
     void testTemporalLayerEncoding() throws IOException {
         // Test temporal layer encoding for SVC/simulcast
+        // RFC 9626: SID is only encoded in the second byte when B=1
         LocObject obj = new LocObject(LocObject.MediaType.VIDEO, new byte[100]);
-        obj.setVideoFrameMarking(false, false, false, 3, 2); // TID=3, SID=2
+        obj.setVideoFrameMarking(false, false, true, 3, 2); // TID=3, SID=2, B=true required for SID
 
         LocSerializer serializer = new LocSerializer();
         byte[] headerExtensions = serializer.serializeHeaderExtensions(obj);

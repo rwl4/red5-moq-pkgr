@@ -118,14 +118,21 @@ class RelayIntegrationTest {
                     }
                     case VideoFrameMarkingExtension.EXTENSION_ID -> {
                         long value = LocHeaderExtension.readVarint(buffer);
-                        // Decode video frame marking per draft-ietf-moq-loc
-                        // Bit 0 = I (Independent), Bit 1 = D (Discardable), Bit 2 = B (Base layer sync)
-                        // Bits 3-5 = TID (Temporal layer), Bits 6-7 = SID (Spatial layer)
-                        isIndependentFrame = (value & 0x01) != 0;
-                        isDiscardable = (value & 0x02) != 0;
-                        // baseLayerSync = (value & 0x04) != 0;
-                        temporalLayerId = (int) ((value >> 3) & 0x07);
-                        spatialLayerId = (int) ((value >> 6) & 0x03);
+                        // Decode video frame marking per RFC 9626
+                        // Bit 5 = I (Independent), Bit 4 = D (Discardable), Bit 3 = B (Base layer sync)
+                        // Bits 2-0 = TID (Temporal layer)
+                        // If B=1 and value >= 256: second byte bits 7-2 = LID (spatial layer)
+                        boolean hasTwoBytes = value >= 256;
+                        long firstByte = hasTwoBytes ? (value >> 8) & 0xFF : value & 0xFF;
+                        isIndependentFrame = (firstByte & 0x20) != 0;
+                        isDiscardable = (firstByte & 0x10) != 0;
+                        // baseLayerSync = (firstByte & 0x08) != 0;
+                        temporalLayerId = (int) (firstByte & 0x07);
+                        if (hasTwoBytes) {
+                            spatialLayerId = (int) ((value & 0xFF) >> 2) & 0x3F;
+                        } else {
+                            spatialLayerId = 0;
+                        }
                     }
                     case AudioLevelExtension.EXTENSION_ID -> {
                         long value = LocHeaderExtension.readVarint(buffer);
